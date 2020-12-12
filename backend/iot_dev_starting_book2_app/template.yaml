@@ -1,0 +1,228 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  iot_dev_starting_book2_app
+
+  Sample SAM Template for iot_dev_starting_book2_app
+
+Globals:
+  Function:
+    Timeout: 10
+
+Parameters: 
+  IncomingWebhookUrl: 
+    Type: String
+    Default: ''
+    Description: Incoming Webhook URL
+  IotCoreUrl: 
+    Type: String
+    Default: ''
+    Description: IoT Core URL
+
+Resources:
+  # SORACOM Funk用のLambda Function
+  NotifyStatusToSlackFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: notify_status_to_slack/
+      Handler: app.lambda_handler
+      Runtime: ruby2.7
+      Environment:
+        Variables:
+          IncomingWebhookUrl: !Ref IncomingWebhookUrl
+
+  # SORACOM Funnel用のIoT Core Topic, DynamoDB Table, Lambda Function
+  ## Distances
+  StreamFromDistancesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: stream_from_distances/
+      Handler: app.lambda_handler
+      Runtime: ruby2.7
+      Policies: AWSLambdaDynamoDBExecutionRole
+      Environment:
+        Variables:
+          StartTimestampsTableName: !Ref StartTimestamps
+          IotCoreUrl: !Ref IotCoreUrl
+      Events:
+        Stream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt DistancesTable.StreamArn
+            BatchSize: 100
+            StartingPosition: TRIM_HORIZON
+  DistancesTable:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions: 
+        - 
+          AttributeName: imsi
+          AttributeType: S
+      KeySchema: 
+        - 
+          AttributeName: imsi
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+  DistancesRuleDynamoDBv2:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      RuleName: DistancesRuleDynamoDBv2
+      TopicRulePayload:
+        Sql: SELECT topic(2) AS imsi, distance, timestamp() AS timestamp FROM 'distances/#'
+        RuleDisabled: false
+        Actions:
+          - DynamoDBv2:
+              PutItem:
+                TableName: !Ref DistancesTable
+              RoleArn: !GetAtt RuleRole.Arn
+  DistancesInPayloadsRuleDynamoDBv2:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      RuleName: DistancesInPayloadsRuleDynamoDBv2
+      TopicRulePayload:
+        Sql: SELECT topic(2) AS imsi, payloads.distance AS distance, timestamp() AS timestamp FROM 'distances_in_payloads/#'
+        RuleDisabled: false
+        Actions:
+          - DynamoDBv2:
+              PutItem:
+                TableName: !Ref DistancesTable
+              RoleArn: !GetAtt RuleRole.Arn
+
+  ## Statuses
+  StatusesTable:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions: 
+        - 
+          AttributeName: imsi
+          AttributeType: S
+      KeySchema: 
+        - 
+          AttributeName: imsi
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+  StatusesRuleDynamoDBv2:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      RuleName: StatusesRuleDynamoDBv2
+      TopicRulePayload:
+        Sql: SELECT topic(2) AS imsi, payloads.status AS status, timestamp() AS timestamp FROM 'statuses/#'
+        RuleDisabled: false
+        Actions:
+          - DynamoDBv2:
+              PutItem:
+                TableName: !Ref StatusesTable
+              RoleArn: !GetAtt RuleRole.Arn
+  StartTimestamps:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions: 
+        - 
+          AttributeName: imsi
+          AttributeType: S
+      KeySchema: 
+        - 
+          AttributeName: imsi
+          KeyType: HASH
+
+  # X.509証明書に付与するPolicy
+  IoTPolicy:
+    Type: AWS::IoT::Policy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: iot:*
+            Resource: '*'
+      PolicyName: ToFPolicy
+
+  ## IoT Core Ruleに付与するRole
+  RuleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: RuleRole
+      Policies:
+        - 
+          PolicyName: DynamoDBPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action:
+                - dynamodb:PutItem
+              Resource: arn:aws:dynamodb:*
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - iot.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+  DynamoDBPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: DynamoDBPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+          Resource: arn:aws:dynamodb:*
+      Roles:
+        - 
+          !Ref StreamFromDistancesFunctionRole
+  IoTCorePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: IoTCorePolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          Effect: Allow
+          Action:
+            - iot:publish
+          Resource: arn:aws:iot:*
+      Roles:
+        - 
+          !Ref StreamFromDistancesFunctionRole
+
+  # SORACOMに登録するIAMユーザ用のPolicy
+  InvokeLambdaUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        - 
+          PolicyName: InvokeLambdaPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: lambda:InvokeFunction
+              Resource: arn:aws:lambda:*
+  PublishIotUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        - 
+          PolicyName: PublishIotPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: iot:publish
+              Resource: arn:aws:iot:*
+
+Outputs:
+  NotifyStatusToSlackFunction:
+    Description: "NotifyStatusToSlackFunction Lambda Function ARN"
+    Value: !GetAtt NotifyStatusToSlackFunction.Arn
