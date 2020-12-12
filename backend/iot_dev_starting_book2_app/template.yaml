@@ -24,7 +24,7 @@ Resources:
   NotifyToSlackFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: notify_status_to_slack/
+      CodeUri: notify_to_slack/
       Handler: app.lambda_handler
       Runtime: ruby2.7
       Environment:
