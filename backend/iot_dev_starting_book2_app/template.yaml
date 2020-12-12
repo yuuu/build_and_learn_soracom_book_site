@@ -21,7 +21,7 @@ Parameters:
 
 Resources:
   # SORACOM Funk用のLambda Function
-  NotifyStatusToSlackFunction:
+  NotifyToSlackFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: notify_status_to_slack/
@@ -105,12 +105,12 @@ Resources:
           KeyType: HASH
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
-  StatusesRuleDynamoDBv2:
+  StatusesInPayloadsRuleDynamoDBv2:
     Type: AWS::IoT::TopicRule
     Properties:
-      RuleName: StatusesRuleDynamoDBv2
+      RuleName: StatusesInPayloadsRuleDynamoDBv2
       TopicRulePayload:
-        Sql: SELECT topic(2) AS imsi, payloads.status AS status, timestamp() AS timestamp FROM 'statuses/#'
+        Sql: SELECT topic(2) AS imsi, payloads.status AS status, timestamp() AS timestamp FROM 'statuses_in_payloads/#'
         RuleDisabled: false
         Actions:
           - DynamoDBv2:
@@ -223,6 +223,6 @@ Resources:
               Resource: arn:aws:iot:*
 
 Outputs:
-  NotifyStatusToSlackFunction:
-    Description: "NotifyStatusToSlackFunction Lambda Function ARN"
-    Value: !GetAtt NotifyStatusToSlackFunction.Arn
+  NotifyToSlackFunction:
+    Description: "NotifyToSlackFunction Lambda Function ARN"
+    Value: !GetAtt NotifyToSlackFunction.Arn
