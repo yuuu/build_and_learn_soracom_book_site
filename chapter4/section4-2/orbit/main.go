@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/binary"
+
 	sdk "github.com/soracom/orbit-sdk-tinygo"
 	"github.com/yuuu/build_and_learn_soracom_book_site/chapter4/section4-2/orbit/data"
 	"github.com/yuuu/build_and_learn_soracom_book_site/chapter4/section4-2/orbit/errs"
@@ -35,8 +37,12 @@ func uplink() sdk.ErrorCode {
 }
 
 func convertInputToOutput(input []byte) (*data.Output, error) {
-	sdk.Log(string(input))
+	distance := binary.LittleEndian.Uint16(input)
+	status := 1
+	if distance > 999 {
+		status = 0
+	}
 	return &data.Output{
-		Message: string(input),
+		Status: status,
 	}, nil
 }

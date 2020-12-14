@@ -90,33 +90,6 @@ Resources:
                 TableName: !Ref DistancesTable
               RoleArn: !GetAtt RuleRole.Arn
 
-  ## Statuses
-  StatusesTable:
-    Type: AWS::DynamoDB::Table
-    Properties: 
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions: 
-        - 
-          AttributeName: imsi
-          AttributeType: S
-      KeySchema: 
-        - 
-          AttributeName: imsi
-          KeyType: HASH
-      StreamSpecification:
-        StreamViewType: NEW_AND_OLD_IMAGES
-  StatusesInPayloadsRuleDynamoDBv2:
-    Type: AWS::IoT::TopicRule
-    Properties:
-      RuleName: StatusesInPayloadsRuleDynamoDBv2
-      TopicRulePayload:
-        Sql: SELECT topic(2) AS imsi, payloads.status AS status, timestamp() AS timestamp FROM 'statuses_in_payloads/#'
-        RuleDisabled: false
-        Actions:
-          - DynamoDBv2:
-              PutItem:
-                TableName: !Ref StatusesTable
-              RoleArn: !GetAtt RuleRole.Arn
   StartTimestamps:
     Type: AWS::DynamoDB::Table
     Properties: 
