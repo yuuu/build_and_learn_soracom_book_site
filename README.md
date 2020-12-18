@@ -15,18 +15,18 @@
 
 ### chapter1
 
-「1章 SORACOMを使うための準備」で使用する、M5Stack用のプログラムです。
-ToFセンサーの値を取得して、値に応じた文字をディスプレイへ表示します。
+「1章 SORACOMを使うための準備」で使用する、M5Stack用のプログラムです。  
+ToFセンサーの値を取得して、値に応じた文字をディスプレイへ表示します。  
 
 ### chapter2
 
-「2章 はじめてのSORACOM」で使用する、M5Stack用のプログラムです。
-SORACOMへToFセンサーの値を送信します。
+「2章 はじめてのSORACOM」で使用する、M5Stack用のプログラムです。  
+SORACOMへToFセンサーの値を送信します。  
 
 ### chapter3
 
-「3章 SORACOMをAWSと連携する」で使用する、M5Stack用のプログラムです。
-SORACOM Beam MQTTエンドポイントに接続して、ToFセンサーの値のpublishおよびメッセージのsubscribeを行います。
+「3章 SORACOMをAWSと連携する」で使用する、M5Stack用のプログラムです。  
+SORACOM Beam MQTTエンドポイントに接続して、ToFセンサーの値のpublishおよびメッセージのsubscribeを行います。  
 
 ## 正誤表
 
