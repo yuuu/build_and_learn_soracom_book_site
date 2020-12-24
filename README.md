@@ -1,6 +1,6 @@
-# 作りながら学ぶSORACOM入門 サポートページ
+# 作って学ぶSORACOM入門 サポートページ
 
-本リポジトリは技術書典10で頒布した技術書「作りながら学ぶSORACOM入門」のサポートページです。
+本リポジトリは技術書典10で頒布した技術書「作って学ぶSORACOM入門」のサポートページです。
 
 ![カバー](https://user-images.githubusercontent.com/8074640/102677313-322c1c80-41e5-11eb-8057-c4d901f6175a.png)
 ![構成図](https://user-images.githubusercontent.com/8074640/102677317-35bfa380-41e5-11eb-95fc-7441af685c60.png)
